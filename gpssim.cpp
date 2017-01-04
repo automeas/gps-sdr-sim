@@ -6,6 +6,7 @@
 #include <math.h>
 #include <time.h>
 #include <omp.h>
+#include "Array_Queue.h"
 #ifdef _WIN32
 #include "getopt.h"
 #else
@@ -92,6 +93,10 @@ double ant_pat_db[37] = {
 };
 
 int allocatedSat[MAX_SAT];
+
+
+// array queue to store samples
+ArrayQueue time_queue;
 
 /*! \brief Subtract two vectors of double
  *  \param[out] y Result of subtraction
@@ -1726,7 +1731,6 @@ int main(int argc, char *argv[])
 	iduration = USER_MOTION_SIZE;
 	verb = FALSE;
 	ionoutc.enable = TRUE;
-
 	if (argc<3)
 	{
 		usage();
@@ -2037,7 +2041,7 @@ int main(int argc, char *argv[])
 	////////////////////////////////////////////////////////////
 
 	// Allocate I/Q buffer
-	iq_buff = calloc(2*iq_buff_size, 2);
+	iq_buff = (short *)calloc(2*iq_buff_size, 2);
 
 	if (iq_buff==NULL)
 	{
@@ -2047,7 +2051,7 @@ int main(int argc, char *argv[])
 
 	if (data_format==SC08)
 	{
-		iq8_buff = calloc(2*iq_buff_size, 1);
+		iq8_buff = (signed char *)calloc(2 * iq_buff_size, 1);
 		if (iq8_buff==NULL)
 		{
 			printf("ERROR: Faild to allocate 8-bit I/Q buffer.\n");
@@ -2056,7 +2060,7 @@ int main(int argc, char *argv[])
 	}
 	else if (data_format==SC01)
 	{
-		iq8_buff = calloc(iq_buff_size/4, 1); // byte = {I0, Q0, I1, Q1, I2, Q2, I3, Q3}
+		iq8_buff = (signed char *)calloc(iq_buff_size / 4, 1); // byte = {I0, Q0, I1, Q1, I2, Q2, I3, Q3}
 		if (iq8_buff==NULL)
 		{
 			printf("ERROR: Faild to allocate compressed 1-bit I/Q buffer.\n");
@@ -2154,8 +2158,10 @@ int main(int argc, char *argv[])
 				{
 					iTable = (chan[i].carr_phase >> 16) & 511;
 
-					ip = chan[i].dataBit * chan[i].codeCA * cosTable512[iTable] * gain[i];
-					qp = chan[i].dataBit * chan[i].codeCA * sinTable512[iTable] * gain[i];
+					//ip = chan[i].dataBit * chan[i].codeCA * cosTable512[iTable] * gain[i];
+					//qp = chan[i].dataBit * chan[i].codeCA * sinTable512[iTable] * gain[i];
+					ip = chan[i].dataBit * chan[i].codeCA * cosTable512[iTable] * 100;
+					qp = chan[i].dataBit * chan[i].codeCA * sinTable512[iTable] * 100;
 
 					i_acc += (ip + 50)/100;
 					q_acc += (qp + 50)/100;
@@ -2228,7 +2234,12 @@ int main(int argc, char *argv[])
 			for (isamp=0; isamp<2*iq_buff_size; isamp++)
 				iq_buff[isamp] = iq_buff[isamp]>0?1000:-1000; // Emulated 1-bit I/Q
 			*/
-			fwrite(iq_buff, 2, 2*iq_buff_size, fp);
+			//fwrite(iq_buff, 2, 2*iq_buff_size, fp);
+			while (time_queue.IsFull())
+			{
+				; // queue is full
+			}
+			time_queue.Enqueue(grx, iq_buff);
 		}
 
 		//
