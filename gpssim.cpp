@@ -13,6 +13,7 @@
 #include <unistd.h>
 #endif
 #include "gpssim.h"
+#include <boost/thread.hpp>
 
 int sinTable512[] = {
 	   2,   5,   8,  11,  14,  17,  20,  23,  26,  29,  32,  35,  38,  41,  44,  47,
@@ -1655,7 +1656,7 @@ void usage(void)
 	return;
 }
 
-int main(int argc, char *argv[])
+int v_main(int argc, char *argv[])
 {
 	clock_t tstart,tend;
 
@@ -2235,11 +2236,8 @@ int main(int argc, char *argv[])
 				iq_buff[isamp] = iq_buff[isamp]>0?1000:-1000; // Emulated 1-bit I/Q
 			*/
 			//fwrite(iq_buff, 2, 2*iq_buff_size, fp);
-			while (time_queue.IsFull())
-			{
-				; // queue is full
-			}
-			time_queue.Enqueue(grx, iq_buff);
+
+			time_queue.BlockPush(grx, iq_buff);
 		}
 
 		//
@@ -2300,8 +2298,8 @@ int main(int argc, char *argv[])
 		grx = incGpsTime(grx, 0.1);
 
 		// Update time counter
-		printf("\rTime into run = %4.1f", subGpsTime(grx, g0));
-		fflush(stdout);
+		 printf("\rTime into run = %4.1f", subGpsTime(grx, g0));
+		 fflush(stdout);
 	}
 
 	tend = clock();
@@ -2318,4 +2316,26 @@ int main(int argc, char *argv[])
 	printf("Process time = %.1f [sec]\n", (double)(tend-tstart)/CLOCKS_PER_SEC);
 
 	return(0);
+}
+
+int v_comsumer()
+{
+	printf("Comsumer is starting!\n");
+	while (true)
+	{
+		time_queue.BlockPop();
+		//boost::this_thread::sleep(boost::posix_time::milliseconds(10));
+	}
+}
+
+int main(int argc, char *argv[])
+{
+	char argstr[] = "-v -e brdc3540.14n -b 16 -s 2500000 -l 1.362334,103.992769,100";
+	argv[0] = &argstr[0];
+	boost::thread t(v_main, 10, argv);
+	boost::thread t_consumer(v_comsumer);
+	t.join();
+	t_consumer.join();
+	printf("done\n");
+	return 0;
 }

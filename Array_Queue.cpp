@@ -1,15 +1,15 @@
 #include"Array_Queue.h"
-
 ArrayQueue::ArrayQueue()
 {
-	front = -1;
-	rear = -1;
+	front = 0;
+	rear = 0;
+	m_lock.initialize();
 }
 
 // To check wheter Queue is empty or not
 bool ArrayQueue::IsEmpty()
 {
-	return (front == -1 && rear == -1);
+	return (front == rear ? true : false);
 }
 
 // To check whether Queue is full or not
@@ -26,46 +26,28 @@ void ArrayQueue::Enqueue(gpstime_t time, short *sample)
 		cout << "Error: Queue is Full\n";
 		return;
 	}
-	if (IsEmpty())
-	{
-		front = rear = 0;
-	}
 	else
 	{
+		A[rear].iq_ptr = &buffer[rear][0];
+		memcpy_s(A[rear].iq_ptr, FRAME_SIZE, sample, FRAME_SIZE);
+		A[rear].time = time;
 		rear = (rear + 1) % MAX_SIZE;
 	}
-	A[rear].iq_ptr = &buffer[rear][0];
-	memcpy_s(A[rear].iq_ptr, FRAME_SIZE, sample, FRAME_SIZE);
-	A[rear].time = time;
 }
 
 // Removes an element in Queue from front end. 
 void ArrayQueue::Dequeue()
 {
-	cout << "Dequeuing \n";
+	// cout << "Dequeuing \n";
 	if (IsEmpty())
 	{
 		cout << "Error: Queue is Empty\n";
 		return;
 	}
-	else if (front == rear)
-	{
-		rear = front = -1;
-	}
 	else
 	{
 		front = (front + 1) % MAX_SIZE;
 	}
-}
-// Returns element at front of queue. 
-time_and_samples ArrayQueue::Front()
-{
-	if (front == -1)
-	{
-		cout << "Error: cannot return front from empty queue\n";
-		return A[0]; // dirty fix
-	}
-	return A[front];
 }
 /*
 Printing the elements in queue from front to rear.
@@ -97,3 +79,28 @@ void ArrayQueue::Print()
 //	Q.Enqueue(8);  Q.Print();
 //	return 0;
 //}
+
+void ArrayQueue::BlockPush(gpstime_t time, short *sample)
+{
+	while (IsFull())
+	{
+		; // queue is full
+	}
+	//m_lock.lock();
+	Enqueue(time, sample);
+	//m_lock.unlock();
+}
+
+time_and_samples ArrayQueue::BlockPop()
+{
+	static time_and_samples temp_value;
+	while (IsEmpty())
+	{
+		; // queue is empty
+	}
+	//m_lock.lock();
+	temp_value = A[front];
+	Dequeue();
+	//m_lock.unlock();
+	return temp_value;
+}
