@@ -2328,14 +2328,45 @@ int v_comsumer()
 	}
 }
 
-int main(int argc, char *argv[])
+void benchmark_producer(const int cnt)
 {
-	char argstr[] = "-v -e brdc3540.14n -b 16 -s 2500000 -l 1.362334,103.992769,100";
-	argv[0] = &argstr[0];
-	boost::thread t(v_main, 10, argv);
-	boost::thread t_consumer(v_comsumer);
+	gpstime_t g_test;
+	g_test.week = 0;
+	g_test.sec = 0;
+	short buffer_test[500000];
+	for (int ii = 0; ii < cnt; ii++)
+	{
+		time_queue.BlockPush(g_test, buffer_test);
+	}
+	return;
+}
+
+void benchmark_consumer(const int cnt)
+{
+	for (int ii = 0; ii < cnt; ii++)
+	{
+		time_queue.BlockPop();
+	}
+	return;
+}
+
+int fifo_benchmark(const int cnt)
+{
+	boost::thread t(benchmark_producer, cnt);
+	boost::thread t_consumer(benchmark_consumer, cnt);
 	t.join();
 	t_consumer.join();
-	printf("done\n");
+	return 0;
+}
+int main(int argc, char *argv[])
+{
+	//char argstr[] = "-v -e brdc3540.14n -b 16 -s 2500000 -l 1.362334,103.992769,100";
+	//argv[0] = &argstr[0];
+	//boost::thread t(v_main, 10, argv);
+	//boost::thread t_consumer(v_comsumer);
+	//t.join();xcv c   
+	//t_consumer.join();
+	//printf("done\n");
+	fifo_benchmark(1000000);
 	return 0;
 }

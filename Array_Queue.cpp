@@ -84,7 +84,7 @@ void ArrayQueue::BlockPush(gpstime_t time, short *sample)
 {
 	while (IsFull())
 	{
-		; // queue is full
+		boost::thread::yield(); // queue is full
 	}
 	//m_lock.lock();
 	Enqueue(time, sample);
@@ -96,7 +96,7 @@ time_and_samples ArrayQueue::BlockPop()
 	static time_and_samples temp_value;
 	while (IsEmpty())
 	{
-		; // queue is empty
+		boost::thread::yield(); // queue is empty
 	}
 	//m_lock.lock();
 	temp_value = A[front];
