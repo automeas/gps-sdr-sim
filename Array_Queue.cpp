@@ -3,7 +3,6 @@ ArrayQueue::ArrayQueue()
 {
 	front = 0;
 	rear = 0;
-	m_lock.initialize();
 }
 
 // To check wheter Queue is empty or not
@@ -19,7 +18,7 @@ bool ArrayQueue::IsFull()
 }
 
 // Inserts an element in queue at rear end
-void ArrayQueue::Enqueue(gpstime_t time, short *sample)
+void ArrayQueue::Enqueue(gpstime_t time, short *sample, size_t length)
 {
 	if (IsFull())
 	{
@@ -29,7 +28,7 @@ void ArrayQueue::Enqueue(gpstime_t time, short *sample)
 	else
 	{
 		A[rear].iq_ptr = &buffer[rear][0];
-		memcpy_s(A[rear].iq_ptr, FRAME_SIZE, sample, FRAME_SIZE);
+		memcpy_s(A[rear].iq_ptr, length, sample, FRAME_SIZE);
 		A[rear].time = time;
 		rear = (rear + 1) % MAX_SIZE;
 	}
@@ -80,14 +79,14 @@ void ArrayQueue::Print()
 //	return 0;
 //}
 
-void ArrayQueue::BlockPush(gpstime_t time, short *sample)
+void ArrayQueue::BlockPush(gpstime_t time, short *sample, size_t length)
 {
 	while (IsFull())
 	{
 		boost::thread::yield(); // queue is full
 	}
 	//m_lock.lock();
-	Enqueue(time, sample);
+	Enqueue(time, sample, length);
 	//m_lock.unlock();
 }
 

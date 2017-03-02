@@ -13,7 +13,12 @@
 #include <unistd.h>
 #endif
 #include "gpssim.h"
+#include <complex>
 #include <boost/thread.hpp>
+
+// array queue to store samples
+ArrayQueue time_queue = ArrayQueue();
+std::vector<std::complex<short>> buff(FRAME_SIZE / 2);
 
 int sinTable512[] = {
 	   2,   5,   8,  11,  14,  17,  20,  23,  26,  29,  32,  35,  38,  41,  44,  47,
@@ -94,10 +99,6 @@ double ant_pat_db[37] = {
 };
 
 int allocatedSat[MAX_SAT];
-
-
-// array queue to store samples
-ArrayQueue time_queue;
 
 /*! \brief Subtract two vectors of double
  *  \param[out] y Result of subtraction
@@ -520,8 +521,10 @@ void eph2sbf(const ephem_t eph, const ionoutc_t ionoutc, unsigned long sbf[5][N_
 	long af1;
 	long af2;
 	long tgd;
+	int svhlth;
+	int codeL2;
 
-	unsigned long ura = 2UL;
+	unsigned long ura = 0UL;
 	unsigned long dataId = 1UL;
 	unsigned long sbf4_page25_svId = 63UL;
 	unsigned long sbf5_page25_svId = 51UL;
@@ -562,6 +565,8 @@ void eph2sbf(const ephem_t eph, const ionoutc_t ionoutc, unsigned long sbf[5][N_
 	af1 = (long)(eph.af1/POW2_M43);
 	af2 = (long)(eph.af2/POW2_M55);
 	tgd = (long)(eph.tgd/POW2_M31);
+	svhlth = (unsigned long)(eph.svhlth);
+	codeL2 = (unsigned long)(eph.codeL2);
 
 	wna = (unsigned long)(eph.toe.week%256);
 	toa = (unsigned long)(eph.toe.sec/4096.0);
@@ -589,7 +594,7 @@ void eph2sbf(const ephem_t eph, const ionoutc_t ionoutc, unsigned long sbf[5][N_
 	// Subframe 1
 	sbf[0][0] = 0x8B0000UL<<6;
 	sbf[0][1] = 0x1UL<<8;
-	sbf[0][2] = ((wn&0x3FFUL)<<20) | (ura<<14) | (((iodc>>8)&0x3UL)<<6);
+	sbf[0][2] = ((wn&0x3FFUL)<<20) | ((codeL2&0x3UL)<<18) | ((ura&0xFUL)<<14) | ((svhlth&0x3FUL)<<8) | (((iodc>>8)&0x3UL)<<6);
 	sbf[0][3] = 0UL;
 	sbf[0][4] = 0UL;
 	sbf[0][5] = 0UL;
@@ -1117,6 +1122,11 @@ int readRinexNavAll(ephem_t eph[][MAX_SAT], ionoutc_t *ionoutc, const char *fnam
 		replaceExpDesignator(tmp, 19);
 		eph[ieph][sv].idot = atof(tmp);
 
+		strncpy(tmp, str+22, 19);
+		tmp[19] = 0;
+		replaceExpDesignator(tmp, 19);
+		eph[ieph][sv].codeL2 = (int)atof(tmp);
+
 		strncpy(tmp, str+41, 19);
 		tmp[19] = 0;
 		replaceExpDesignator(tmp, 19);
@@ -1125,6 +1135,13 @@ int readRinexNavAll(ephem_t eph[][MAX_SAT], ionoutc_t *ionoutc, const char *fnam
 		// BROADCAST ORBIT - 6
 		if (NULL==fgets(str, MAX_CHAR, fp))
 			break;
+
+		strncpy(tmp, str+22, 19);
+		tmp[19] = 0;
+		replaceExpDesignator(tmp, 19);
+		eph[ieph][sv].svhlth = (int)atof(tmp);
+		if ((eph[ieph][sv].svhlth>0) && (eph[ieph][sv].svhlth<32))
+			eph[ieph][sv].svhlth += 32; // Set MSB to 1
 
 		strncpy(tmp, str+41, 19);
 		tmp[19] = 0;
@@ -1642,7 +1659,7 @@ void usage(void)
 		"  -e <gps_nav>     RINEX navigation file for GPS ephemerides (required)\n"
 		"  -u <user_motion> User motion file (dynamic mode)\n"
 		"  -g <nmea_gga>    NMEA GGA stream (dynamic mode)\n"
-		"  -l <location>    Lat,Lon,Hgt (static mode) e.g. 30.286502,120.032669,100\n"
+		"  -l <location>    Lat,Lon,Hgt (static mode) e.g. 35.681298,139.766247,10.0\n"
 		"  -t <date,time>   Scenario start time YYYY/MM/DD,hh:mm:ss\n"
 		"  -T <date,time>   Overwrite TOC and TOE to scenario start time\n"
 		"  -d <duration>    Duration [sec] (max: %.0f)\n"
@@ -1844,9 +1861,11 @@ int v_main(int argc, char *argv[])
 
 	if (umfile[0]==0 && !staticLocationMode)
 	{
-		printf("ERROR: User motion file / NMEA GGA stream is not specified.\n");
-		printf("You may use -l to specify the static location directly.\n");
-		exit(1);
+		// Default static location; Tokyo
+		staticLocationMode = TRUE;
+		llh[0] = 35.681298 / R2D;
+		llh[1] = 139.766247 / R2D;
+		llh[2] = 10.0;
 	}
 
 	// Buffer size	
@@ -2237,7 +2256,7 @@ int v_main(int argc, char *argv[])
 			*/
 			//fwrite(iq_buff, 2, 2*iq_buff_size, fp);
 
-			time_queue.BlockPush(grx, iq_buff);
+			time_queue.BlockPush(grx, iq_buff, 2 * iq_buff_size);
 		}
 
 		//
@@ -2318,55 +2337,44 @@ int v_main(int argc, char *argv[])
 	return(0);
 }
 
-int v_comsumer()
-{
-	printf("Comsumer is starting!\n");
-	while (true)
-	{
-		time_queue.BlockPop();
-		//boost::this_thread::sleep(boost::posix_time::milliseconds(10));
-	}
-}
+//int v_comsumer()
+//{
+//	printf("Comsumer is starting!\n");
+//	while (true)
+//	{
+//		time_queue.BlockPop();
+//		//boost::this_thread::sleep(boost::posix_time::milliseconds(10));
+//	}
+//}
+//
+//void benchmark_producer(const int cnt)
+//{
+//	gpstime_t g_test;
+//	g_test.week = 0;
+//	g_test.sec = 0;
+//	short buffer_test[500000];
+//	for (int ii = 0; ii < cnt; ii++)
+//	{
+//		time_queue.BlockPush(g_test, buffer_test);
+//	}
+//	return;
+//}
+//
+//void benchmark_consumer(const int cnt)
+//{
+//	for (int ii = 0; ii < cnt; ii++)
+//	{
+//		time_queue.BlockPop();
+//	}
+//	return;
+//}
+//
+//int fifo_benchmark(const int cnt)
+//{
+//	boost::thread t(benchmark_producer, cnt);
+//	boost::thread t_consumer(benchmark_consumer, cnt);
+//	t.join();
+//	t_consumer.join();
+//	return 0;
+//}
 
-void benchmark_producer(const int cnt)
-{
-	gpstime_t g_test;
-	g_test.week = 0;
-	g_test.sec = 0;
-	short buffer_test[500000];
-	for (int ii = 0; ii < cnt; ii++)
-	{
-		time_queue.BlockPush(g_test, buffer_test);
-	}
-	return;
-}
-
-void benchmark_consumer(const int cnt)
-{
-	for (int ii = 0; ii < cnt; ii++)
-	{
-		time_queue.BlockPop();
-	}
-	return;
-}
-
-int fifo_benchmark(const int cnt)
-{
-	boost::thread t(benchmark_producer, cnt);
-	boost::thread t_consumer(benchmark_consumer, cnt);
-	t.join();
-	t_consumer.join();
-	return 0;
-}
-int main(int argc, char *argv[])
-{
-	//char argstr[] = "-v -e brdc3540.14n -b 16 -s 2500000 -l 1.362334,103.992769,100";
-	//argv[0] = &argstr[0];
-	//boost::thread t(v_main, 10, argv);
-	//boost::thread t_consumer(v_comsumer);
-	//t.join();xcv c   
-	//t_consumer.join();
-	//printf("done\n");
-	fifo_benchmark(1000000);
-	return 0;
-}
