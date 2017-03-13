@@ -1,5 +1,4 @@
 #include "gpssim.h"
-#include "Array_Queue.h"
 //
 ////
 //// Copyright 2011-2012,2014 Ettus Research LLC
@@ -72,9 +71,7 @@
 #include <complex>
 #include <csignal>
 
-// from gpssim.cpp
-extern ArrayQueue time_queue;
-extern std::vector<std::complex<short>> buff(FRAME_SIZE / 2);
+
 namespace po = boost::program_options;
 
 static bool stop_signal_called = false;
@@ -99,14 +96,20 @@ template<typename samp_type> void send_from_buffer(
 	//std::ifstream infile(file.c_str(), std::ifstream::binary);
 
 	//loop until the entire file has been read
-
+	vector<frame> frame_buffer(250000);
 	while (not stop_signal_called){
-
 		//infile.read((char*)&buff.front(), buff.size()*sizeof(samp_type));
 		//size_t num_tx_samps = size_t(infile.gcount() / sizeof(samp_type));
 		//md.end_of_burst = infile.eof();
-		time_and_samples temp_value = time_queue.BlockPop();
-		tx_stream->send(&buff.front(), FRAME_SIZE / 2, md);
+		//frame_queue.size();
+		if (frame_queue.size()>10){
+			//fq_mtx.lock();
+			tx_stream->send(&(frame_queue.front().front()), 250000, md);
+			frame_queue.pop();
+			//fq_mtx.unlock();
+
+		}
+		boost::thread::yield();
 		//tx_stream->send(&buff.front(), num_tx_samps, md);
 	}
 
@@ -235,8 +238,9 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
 
 
 	//file the buffer
-	char *argstr[] = { "", "-v", "-e", "brdc3540.14n", "-b", "16", "-s", "2500000", "-l", "1.362334,103.992769,100", "-d", "300" };
+	char *argstr[] = { "", "-v", "-e", "brdc3550.16n", "-b", "16", "-s", "2500000", "-l", "1.362334,103.992769,100", "-d", "300" };
 	boost::thread t(v_main, 12, argstr);
+	//boost::thread t2(benchmark_consumer, 100);
 	//t.join();
 
 	//send from buffer

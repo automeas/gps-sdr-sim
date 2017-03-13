@@ -1,24 +1,9 @@
 #define _CRT_SECURE_NO_DEPRECATE
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <math.h>
-#include <time.h>
-#include <omp.h>
-#include "Array_Queue.h"
-#ifdef _WIN32
-#include "getopt.h"
-#else
-#include <unistd.h>
-#endif
 #include "gpssim.h"
-#include <complex>
-#include <boost/thread.hpp>
 
-// array queue to store samples
-ArrayQueue time_queue = ArrayQueue();
-std::vector<std::complex<short>> buff(FRAME_SIZE / 2);
+// queue to store samples
+queue<frame> frame_queue;
+std::mutex fq_mtx;
 
 int sinTable512[] = {
 	   2,   5,   8,  11,  14,  17,  20,  23,  26,  29,  32,  35,  38,  41,  44,  47,
@@ -2178,10 +2163,10 @@ int v_main(int argc, char *argv[])
 				{
 					iTable = (chan[i].carr_phase >> 16) & 511;
 
-					//ip = chan[i].dataBit * chan[i].codeCA * cosTable512[iTable] * gain[i];
-					//qp = chan[i].dataBit * chan[i].codeCA * sinTable512[iTable] * gain[i];
-					ip = chan[i].dataBit * chan[i].codeCA * cosTable512[iTable] * 100;
-					qp = chan[i].dataBit * chan[i].codeCA * sinTable512[iTable] * 100;
+					ip = chan[i].dataBit * chan[i].codeCA * cosTable512[iTable] * gain[i];
+					qp = chan[i].dataBit * chan[i].codeCA * sinTable512[iTable] * gain[i];
+					//ip = chan[i].dataBit * chan[i].codeCA * cosTable512[iTable] * 100;
+					//qp = chan[i].dataBit * chan[i].codeCA * sinTable512[iTable] * 100;
 
 					i_acc += (ip + 50)/100;
 					q_acc += (qp + 50)/100;
@@ -2256,7 +2241,24 @@ int v_main(int argc, char *argv[])
 			*/
 			//fwrite(iq_buff, 2, 2*iq_buff_size, fp);
 
-			time_queue.BlockPush(grx, iq_buff, 2 * iq_buff_size);
+			// time_queue.BlockPush(grx, iq_buff, 2 * iq_buff_size);
+			frame temp_frame(iq_buff_size);
+
+			for (int ii = 0; ii < iq_buff_size; ii++)
+			{
+				temp_frame[ii] = complex<short>(*(iq_buff + 2 * ii), *(iq_buff + 2 * ii + 1));
+			}
+			while (frame_queue.size() > 1000)
+			{
+				boost::thread::yield();
+			}
+			fq_mtx.lock();
+			frame_queue.push(temp_frame);
+			fq_mtx.unlock();
+			//boost::thread::yield();
+			//printf("FQ size = %d\n",frame_queue.size());
+			//printf("iq_buff_size = %d\n", iq_buff_size);
+
 		}
 
 		//
@@ -2360,14 +2362,15 @@ int v_main(int argc, char *argv[])
 //	return;
 //}
 //
-//void benchmark_consumer(const int cnt)
-//{
-//	for (int ii = 0; ii < cnt; ii++)
-//	{
-//		time_queue.BlockPop();
-//	}
-//	return;
-//}
+void benchmark_consumer(const int cnt)
+{
+	for (int ii = 0; ii < cnt; ii++)
+	{
+		printf("consumer : %d\n", frame_queue.size());
+		Sleep(100);
+	}
+	return;
+}
 //
 //int fifo_benchmark(const int cnt)
 //{

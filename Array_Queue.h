@@ -3,6 +3,8 @@
 /* Queue - Circular Array implementation in C++*/
 /* Lock free for single producer and single consumer*/
 #include<iostream>
+#include <vector>
+#include <complex>
 #include"gpssim.h"
 using namespace std;
 #define MAX_SIZE 10  //maximum size of the array that will store Queue. 

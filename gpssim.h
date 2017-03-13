@@ -1,6 +1,27 @@
 #ifndef GPSSIM_H
 #define GPSSIM_H
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <math.h>
+#include <time.h>
+#include <omp.h>
+#ifdef _WIN32
+#include "getopt.h"
+#include "windows.h"
+#else
+#include <unistd.h>
+#endif
+#include <complex>
+#include<vector>
+#include<queue>
+#include <boost/thread.hpp>
+#include <mutex>          // std::mutex
+
+
+using namespace std;
+
 #define TRUE	(1)
 #define FALSE	(0)
 
@@ -171,6 +192,11 @@ typedef struct
 	range_t rho0;
 } channel_t;
 
+typedef vector<complex<short>> frame;
+extern queue<frame> frame_queue;
+extern std::mutex fq_mtx;
+
 int v_main(int argc, char *argv[]);
-int v_comsumer();
+void benchmark_consumer(const int cnt);
+
 #endif

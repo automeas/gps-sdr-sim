@@ -79,13 +79,11 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="Array_Queue.cpp" />
     <ClCompile Include="getopt.cpp" />
     <ClCompile Include="gpssim.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Array_Queue.h" />
     <ClInclude Include="getopt.h" />
     <ClInclude Include="gpssim.h" />
   </ItemGroup>
