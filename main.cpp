@@ -31,7 +31,7 @@
 //
 //int main(int argc, char *argv[])
 //{
-//	char *argstr[] = { "", "-v", "-e", "brdc3540.14n", "-b", "16", "-s", "2500000", "-l", "1.362334,103.992769,100", "-d", "10" };
+//	char *argstr[] = { "", "-v", "-e", "brdc3540.14n", "-b", "16", "-s", "2500000", "-l", "34.77444,133.72611,100", "-d", "10" };
 //	//argv[0] = &argstr[0];
 //	boost::thread t(v_main, 12, argstr);
 //	boost::thread t_consumer(v_comsumer);
@@ -102,7 +102,7 @@ template<typename samp_type> void send_from_buffer(
 		//size_t num_tx_samps = size_t(infile.gcount() / sizeof(samp_type));
 		//md.end_of_burst = infile.eof();
 		//frame_queue.size();
-		if (frame_queue.size()>10){
+		if (frame_queue.size()>2){
 			//fq_mtx.lock();
 			tx_stream->send(&(frame_queue.front().front()), 250000, md);
 			frame_queue.pop();
@@ -238,8 +238,9 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
 
 
 	//file the buffer
-	char *argstr[] = { "", "-v", "-e", "brdc0720.17n", "-b", "16", "-s", "2500000", "-l", "1.362334,103.992769,100", "-d", "600" };
+	char *argstr[] = { "", "-v", "-e", "brdc0720.17n", "-b", "16", "-s", "2500000", "-l", "34.8097531308,113.5292048967,50", "-d", "600" };
 	boost::thread t(v_main, 12, argstr);
+	boost::thread t_input(keyboard_input);
 	//boost::thread t2(benchmark_consumer, 100);
 	//t.join();
 

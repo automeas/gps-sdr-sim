@@ -5,6 +5,10 @@
 queue<frame> frame_queue;
 std::mutex fq_mtx;
 
+double llh[3];
+double xyz[USER_MOTION_SIZE][3];
+std::mutex llh_mtx;
+
 int sinTable512[] = {
 	   2,   5,   8,  11,  14,  17,  20,  23,  26,  29,  32,  35,  38,  41,  44,  47,
 	  50,  53,  56,  59,  62,  65,  68,  71,  74,  77,  80,  83,  86,  89,  91,  94,
@@ -1669,7 +1673,7 @@ int v_main(int argc, char *argv[])
 	ephem_t eph[EPHEM_ARRAY_SIZE][MAX_SAT];
 	gpstime_t g0;
 	
-	double llh[3];
+
 	
 	int i;
 	channel_t chan[MAX_CHAN];
@@ -1687,7 +1691,7 @@ int v_main(int argc, char *argv[])
 	int iumd;
 	int numd;
 	char umfile[MAX_CHAR];
-	double xyz[USER_MOTION_SIZE][3];
+
 
 	int staticLocationMode = FALSE;
 	int nmeaGGA = FALSE;
@@ -2123,6 +2127,7 @@ int v_main(int argc, char *argv[])
 
 	for (iumd=1; iumd<numd; iumd++)
 	{
+		llh_mtx.lock();
 		for (i=0; i<MAX_CHAN; i++)
 		{
 			if (chan[i].prn>0)
@@ -2132,7 +2137,7 @@ int v_main(int argc, char *argv[])
 				sv = chan[i].prn-1;
 
 				// Current pseudorange
-				computeRange(&rho, eph[ieph][sv], &ionoutc, grx, xyz[iumd]);
+				computeRange(&rho, eph[ieph][sv], &ionoutc, grx, xyz[0]);
 				chan[i].azel[0] = rho.azel[0];
 				chan[i].azel[1] = rho.azel[1];
 
@@ -2248,7 +2253,7 @@ int v_main(int argc, char *argv[])
 			{
 				temp_frame[ii] = complex<short>(*(iq_buff + 2 * ii), *(iq_buff + 2 * ii + 1));
 			}
-			while (frame_queue.size() > 1000)
+			while (frame_queue.size() > 10)
 			{
 				boost::thread::yield();
 			}
@@ -2300,7 +2305,7 @@ int v_main(int argc, char *argv[])
 			}
 
 			// Update channel allocation
-			allocateChannel(chan, eph[ieph], ionoutc, grx, xyz[iumd], elvmask);
+			allocateChannel(chan, eph[ieph], ionoutc, grx, xyz[0], elvmask);
 
 			// Show ditails about simulated channels
 			if (verb==TRUE)
@@ -2321,6 +2326,7 @@ int v_main(int argc, char *argv[])
 		// Update time counter
 		 printf("\rTime into run = %4.1f", subGpsTime(grx, g0));
 		 fflush(stdout);
+		 llh_mtx.unlock();
 	}
 
 	tend = clock();
@@ -2380,4 +2386,38 @@ void benchmark_consumer(const int cnt)
 //	t_consumer.join();
 //	return 0;
 //}
+
+void keyboard_input()
+{
+	while (1)
+	{
+		char key;
+		cout << "LLH=" << llh[0] << "," << llh[1] << "," << llh[2] << endl;
+		cout << "Press key!" << endl;
+		cin >> key;
+		llh_mtx.lock();
+		if (key == 'w')
+		{
+			llh[0] = llh[0] + 0.00001;
+			llh2xyz(llh, xyz[0]);
+		}
+		if (key == 's')
+		{
+			llh[0] = llh[0] - 0.00001;
+			llh2xyz(llh, xyz[0]);
+		}
+		if (key == 'a')
+		{
+			llh[1] = llh[1] - 0.00001;
+			llh2xyz(llh, xyz[0]);
+		}
+		if (key == 'd')
+		{
+			llh[1] = llh[1] + 0.00001;
+			llh2xyz(llh, xyz[0]);
+		}
+		llh_mtx.unlock();
+	}
+	return;
+}
 

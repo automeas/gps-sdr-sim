@@ -94,6 +94,9 @@ using namespace std;
 
 #define EPHEM_ARRAY_SIZE (13) // for daily GPS broadcast ephemers file (brdc)
 
+extern 	double llh[3];
+
+
 /*! \brief Structure representing GPS time */
 typedef struct
 {
@@ -198,5 +201,6 @@ extern std::mutex fq_mtx;
 
 int v_main(int argc, char *argv[]);
 void benchmark_consumer(const int cnt);
+void keyboard_input();
 
 #endif
