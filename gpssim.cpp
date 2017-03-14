@@ -3,10 +3,10 @@
 
 // queue to store samples
 queue<frame> frame_queue;
-std::mutex fq_mtx;
 
 double llh[3];
 double xyz[USER_MOTION_SIZE][3];
+queue<vector<double>> llh_queue;
 std::mutex llh_mtx;
 
 int sinTable512[] = {
@@ -1802,7 +1802,6 @@ int v_main(int argc, char *argv[])
 				t0.hh = gmt->tm_hour;
 				t0.mm = gmt->tm_min;
 				t0.sec = (double)gmt->tm_sec;
-
 				date2gps(&t0, &g0);
 
 				break;
@@ -2127,7 +2126,16 @@ int v_main(int argc, char *argv[])
 
 	for (iumd=1; iumd<numd; iumd++)
 	{
-		llh_mtx.lock();
+		if (llh_queue.size()>1)
+		{
+			llh_mtx.lock();
+			llh[0] = llh_queue.front()[0];
+			llh[1] = llh_queue.front()[1];
+			llh[2] = llh_queue.front()[2];
+			llh2xyz(llh, xyz[0]);
+			llh_queue.pop();
+			llh_mtx.unlock();
+		}
 		for (i=0; i<MAX_CHAN; i++)
 		{
 			if (chan[i].prn>0)
@@ -2257,9 +2265,7 @@ int v_main(int argc, char *argv[])
 			{
 				boost::thread::yield();
 			}
-			fq_mtx.lock();
 			frame_queue.push(temp_frame);
-			fq_mtx.unlock();
 			//boost::thread::yield();
 			//printf("FQ size = %d\n",frame_queue.size());
 			//printf("iq_buff_size = %d\n", iq_buff_size);
@@ -2326,7 +2332,6 @@ int v_main(int argc, char *argv[])
 		// Update time counter
 		 printf("\rTime into run = %4.1f", subGpsTime(grx, g0));
 		 fflush(stdout);
-		 llh_mtx.unlock();
 	}
 
 	tend = clock();
@@ -2389,34 +2394,54 @@ void benchmark_consumer(const int cnt)
 
 void keyboard_input()
 {
+	float step = (1.568e-7)/2; // 0.5m
 	while (1)
 	{
 		char key;
 		cout << "LLH=" << llh[0] << "," << llh[1] << "," << llh[2] << endl;
 		cout << "Press key!" << endl;
 		cin >> key;
-		llh_mtx.lock();
+		
 		if (key == 'w')
 		{
-			llh[0] = llh[0] + 0.00001;
+			llh[0] = llh[0] + step;
 			llh2xyz(llh, xyz[0]);
 		}
 		if (key == 's')
 		{
-			llh[0] = llh[0] - 0.00001;
+			llh[0] = llh[0] - step;
 			llh2xyz(llh, xyz[0]);
 		}
 		if (key == 'a')
 		{
-			llh[1] = llh[1] - 0.00001;
+			llh[1] = llh[1] - step;
 			llh2xyz(llh, xyz[0]);
 		}
 		if (key == 'd')
 		{
-			llh[1] = llh[1] + 0.00001;
+			llh[1] = llh[1] + step;
 			llh2xyz(llh, xyz[0]);
 		}
-		llh_mtx.unlock();
+		if (key == 'g')
+		{
+			vector<double> temp_llh(3);
+			temp_llh[0] = llh[0];
+			temp_llh[1] = llh[1];
+			temp_llh[2] = llh[2];
+			while (1)
+			{
+				if (llh_queue.size() < 3)
+				{
+					llh_mtx.lock();
+					temp_llh[1] = temp_llh[1] + step;
+					llh_queue.push(temp_llh);
+					llh_mtx.unlock();
+				}
+
+			}
+
+		}
+		
 	}
 	return;
 }

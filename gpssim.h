@@ -197,7 +197,6 @@ typedef struct
 
 typedef vector<complex<short>> frame;
 extern queue<frame> frame_queue;
-extern std::mutex fq_mtx;
 
 int v_main(int argc, char *argv[]);
 void benchmark_consumer(const int cnt);

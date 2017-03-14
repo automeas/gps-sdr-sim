@@ -66,10 +66,13 @@
 #include <boost/program_options.hpp>
 #include <boost/format.hpp>
 #include <boost/thread.hpp>
+#include <boost/date_time/gregorian/gregorian.hpp> 
+#include <boost/date_time/posix_time/posix_time.hpp> 
 #include <iostream>
 #include <fstream>
 #include <complex>
 #include <csignal>
+#define BOOST_DATE_TIME_SOURCE  
 
 
 namespace po = boost::program_options;
@@ -103,11 +106,8 @@ template<typename samp_type> void send_from_buffer(
 		//md.end_of_burst = infile.eof();
 		//frame_queue.size();
 		if (frame_queue.size()>2){
-			//fq_mtx.lock();
 			tx_stream->send(&(frame_queue.front().front()), 250000, md);
 			frame_queue.pop();
-			//fq_mtx.unlock();
-
 		}
 		boost::thread::yield();
 		//tx_stream->send(&buff.front(), num_tx_samps, md);
@@ -238,8 +238,8 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
 
 
 	//file the buffer
-	char *argstr[] = { "", "-v", "-e", "brdc0720.17n", "-b", "16", "-s", "2500000", "-l", "34.8097531308,113.5292048967,50", "-d", "600" };
-	boost::thread t(v_main, 12, argstr);
+	char *argstr[] = { "", "-v", "-e", "brdc0720.17n", "-b", "16", "-s", "2500000", "-l", "34.8097531308,113.5292048967,50", "-d", "1800", " -T", "now" };
+	boost::thread t(v_main, 14, argstr);
 	boost::thread t_input(keyboard_input);
 	//boost::thread t2(benchmark_consumer, 100);
 	//t.join();
