@@ -238,8 +238,8 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
 
 
 	//file the buffer
-	char *argstr[] = { "", "-v", "-e", "brdc0720.17n", "-b", "16", "-s", "2500000", "-l", "34.8097531308,113.5292048967,50", "-d", "1800", " -T", "now" };
-	boost::thread t(v_main, 14, argstr);
+	char *argstr[] = { "", "-e", "brdc0720.17n", "-b", "16", "-s", "2500000", "-l", "34.8097531308,113.5292048967,50", "-d", "1800", "-T", "now" };
+	boost::thread t(v_main, 13, argstr);
 	boost::thread t_input(keyboard_input);
 	//boost::thread t2(benchmark_consumer, 100);
 	//t.join();

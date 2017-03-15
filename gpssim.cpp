@@ -2330,8 +2330,9 @@ int v_main(int argc, char *argv[])
 		grx = incGpsTime(grx, 0.1);
 
 		// Update time counter
-		 printf("\rTime into run = %4.1f", subGpsTime(grx, g0));
-		 fflush(stdout);
+		//if (subGpsTime(grx, g0) - floor(subGpsTime(grx, g0)) == 0)
+		//	printf("\rTime into run = %4.1f", subGpsTime(grx, g0));
+		//fflush(stdout);
 	}
 
 	tend = clock();
@@ -2398,8 +2399,6 @@ void keyboard_input()
 	while (1)
 	{
 		char key;
-		cout << "LLH=" << llh[0] << "," << llh[1] << "," << llh[2] << endl;
-		cout << "Press key!" << endl;
 		cin >> key;
 		
 		if (key == 'w')
