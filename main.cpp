@@ -72,19 +72,18 @@
 #include <fstream>
 #include <complex>
 #include <csignal>
+#include <cmath>
 #define BOOST_DATE_TIME_SOURCE  
-
 
 namespace po = boost::program_options;
 
 static bool stop_signal_called = false;
 void sig_int_handler(int){ stop_signal_called = true; }
 
-template<typename samp_type> void send_from_buffer(
+void send_from_queue(
 	uhd::usrp::multi_usrp::sptr usrp,
 	const std::string &cpu_format,
 	const std::string &wire_format,
-	const std::string &file,
 	size_t samps_per_buff
 	){
 
@@ -101,16 +100,12 @@ template<typename samp_type> void send_from_buffer(
 	//loop until the entire file has been read
 	vector<frame> frame_buffer(250000);
 	while (not stop_signal_called){
-		//infile.read((char*)&buff.front(), buff.size()*sizeof(samp_type));
-		//size_t num_tx_samps = size_t(infile.gcount() / sizeof(samp_type));
-		//md.end_of_burst = infile.eof();
-		//frame_queue.size();
+
 		if (frame_queue.size()>2){
 			tx_stream->send(&(frame_queue.front().front()), 250000, md);
 			frame_queue.pop();
 		}
 		boost::thread::yield();
-		//tx_stream->send(&buff.front(), num_tx_samps, md);
 	}
 
 }
@@ -119,17 +114,18 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
 	uhd::set_thread_priority_safe();
 
 	//variables to be set by po
-	std::string args, file, type, ant, subdev, ref, wirefmt;
+	std::string args, ant, subdev, ref, wirefmt;
 	size_t spb;
 	double rate, freq, gain, bw, delay, lo_off;
 
 	//setup the program options
+	rate = 2500000; //default
+	freq = 1575420000; //default
+	gain = 80; //default
 	po::options_description desc("Allowed options");
 	desc.add_options()
 		("help", "help message")
-		("args", po::value<std::string>(&args)->default_value(""), "multi uhd device address args")
-		("file", po::value<std::string>(&file)->default_value("usrp_samples.dat"), "name of the file to read binary samples from")
-		("type", po::value<std::string>(&type)->default_value("short"), "sample type: double, float, or short")
+		("args", po::value<std::string>(&args)->default_value("master_clock_rate=50e6"), "multi uhd device address args")
 		("spb", po::value<size_t>(&spb)->default_value(10000), "samples per buffer")
 		("rate", po::value<double>(&rate), "rate of outgoing samples")
 		("freq", po::value<double>(&freq), "RF center frequency in Hz")
@@ -169,20 +165,10 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
 
 	std::cout << boost::format("Using Device: %s") % usrp->get_pp_string() << std::endl;
 
-	//set the sample rate
-	if (not vm.count("rate")){
-		std::cerr << "Please specify the sample rate with --rate" << std::endl;
-		return ~0;
-	}
 	std::cout << boost::format("Setting TX Rate: %f Msps...") % (rate / 1e6) << std::endl;
 	usrp->set_tx_rate(rate);
 	std::cout << boost::format("Actual TX Rate: %f Msps...") % (usrp->get_tx_rate() / 1e6) << std::endl << std::endl;
 
-	//set the center frequency
-	if (not vm.count("freq")){
-		std::cerr << "Please specify the center frequency with --freq" << std::endl;
-		return ~0;
-	}
 	std::cout << boost::format("Setting TX Freq: %f MHz...") % (freq / 1e6) << std::endl;
 	uhd::tune_request_t tune_request;
 	if (vm.count("lo_off")) tune_request = uhd::tune_request_t(freq, lo_off);
@@ -192,11 +178,9 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
 	std::cout << boost::format("Actual TX Freq: %f MHz...") % (usrp->get_tx_freq() / 1e6) << std::endl << std::endl;
 
 	//set the rf gain
-	if (vm.count("gain")){
-		std::cout << boost::format("Setting TX Gain: %f dB...") % gain << std::endl;
-		usrp->set_tx_gain(gain);
-		std::cout << boost::format("Actual TX Gain: %f dB...") % usrp->get_tx_gain() << std::endl << std::endl;
-	}
+	std::cout << boost::format("Setting TX Gain: %f dB...") % gain << std::endl;
+	usrp->set_tx_gain(gain);
+	std::cout << boost::format("Actual TX Gain: %f dB...") % usrp->get_tx_gain() << std::endl << std::endl;
 
 	//set the analog frontend filter bandwidth
 	if (vm.count("bw")){
@@ -238,21 +222,13 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
 
 
 	//file the buffer
-	char *argstr[] = { "", "-e", "brdc0720.17n", "-b", "16", "-s", "2500000", "-l", "34.8097531308,113.5292048967,50", "-d", "1800", "-T", "now" };
+	char *argstr[] = { "", "-e", "brdc0720.17n", "-b", "16", "-s", "2500000", "-l", "34.8097531308,113.5292048967,50", "-d", "1", "-T", "now" };
 	boost::thread t(v_main, 13, argstr);
 	boost::thread t_input(keyboard_input);
-	//boost::thread t2(benchmark_consumer, 100);
-	//t.join();
 
-	//send from buffer
-	do{
-		if (type == "double") send_from_buffer<std::complex<double> >(usrp, "fc64", wirefmt, file, spb);
-		else if (type == "float") send_from_buffer<std::complex<float> >(usrp, "fc32", wirefmt, file, spb);
-		else if (type == "short") send_from_buffer<std::complex<short> >(usrp, "sc16", wirefmt, file, spb);
-		else throw std::runtime_error("Unknown type " + type);
+	//send from queue
+	send_from_queue(usrp, "sc16", wirefmt, spb);
 
-		if (repeat and delay != 0.0) boost::this_thread::sleep(boost::posix_time::milliseconds(delay));
-	} while (repeat and not stop_signal_called);
 
 	//finished
 	std::cout << std::endl << "Done!" << std::endl << std::endl;

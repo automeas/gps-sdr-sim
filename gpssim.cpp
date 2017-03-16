@@ -1897,7 +1897,7 @@ int v_main(int argc, char *argv[])
 		printf("Using static location mode.\n");
 		llh2xyz(llh,xyz[0]); // Convert llh to xyz
 
-		numd = iduration;
+		numd = 100;
 		
 		for (iumd=1; iumd<numd; iumd++)
 		{
@@ -2124,7 +2124,9 @@ int v_main(int argc, char *argv[])
 	// Update receiver time
 	grx = incGpsTime(grx, 0.1);
 
-	for (iumd=1; iumd<numd; iumd++)
+	//for (iumd=1; iumd<numd; iumd++)
+	iumd = 1;
+	while (TRUE)
 	{
 		if (llh_queue.size()>1)
 		{
@@ -2395,7 +2397,7 @@ void benchmark_consumer(const int cnt)
 
 void keyboard_input()
 {
-	float step = (1.568e-7)/2; // 0.5m
+	double step = (1.568e-7)/2; // 0.5m
 	while (1)
 	{
 		char key;

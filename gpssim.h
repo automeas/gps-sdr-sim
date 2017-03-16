@@ -22,9 +22,6 @@
 
 using namespace std;
 
-#define TRUE	(1)
-#define FALSE	(0)
-
 /*! \brief Maximum length of a line in a text file (RINEX, motion) */
 #define MAX_CHAR (100)
 
@@ -35,7 +32,7 @@ using namespace std;
 #define MAX_CHAN (16)
 
 /*! \brief Maximum number of user motion points */
-#define USER_MOTION_SIZE (30000) // max duration at 10Hz
+#define USER_MOTION_SIZE (100) // max duration at 10Hz
 
 /*! \brief Number of subframes */
 #define N_SBF (5) // 5 subframes per frame
