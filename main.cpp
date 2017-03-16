@@ -74,6 +74,11 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
 	double rate, freq, gain, bw, delay, lo_off;
 	std::string cmd;
 
+	vector<double> temp_llh(3);
+	vector<double> dst_llh(3);
+	double speed_llh[3]; // speed
+	double max_speed;
+
 	//setup the program options
 	rate = 2500000; //default
 	freq = 1575420000; //default
@@ -187,8 +192,10 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
 	}
 	else
 	{
-		sscanf(cmd.c_str(), "%lf,%lf,%lf", &llh[0], &llh[1], &llh[2]);
+		sscanf(cmd.c_str(), "g:%lf,%lf,%lf,%lf", &llh[0], &llh[1], &llh[2], &max_speed);
 	}
+	cout << "ready" << endl;
+	cout.flush();
 
 	//file the buffer
 	char *argstr[] = { "", "-e", "brdc0720.17n", "-b", "16", "-s", "2500000", "-d", "3600", " -T", "now" };
@@ -203,10 +210,6 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
 		cin >> cmd;
 		if (cmd[0] == 'g') // goto location
 		{
-			vector<double> temp_llh(3);
-			vector<double> dst_llh(3);
-			double speed_llh[3]; // speed
-			double max_speed;
 			sscanf(cmd.c_str(),"g:%lf,%lf,%lf,%lf", &dst_llh[0], &dst_llh[1], &dst_llh[2], &max_speed);
 			dst_llh[0] = dst_llh[0] / R2D;
 			dst_llh[1] = dst_llh[1] / R2D;
