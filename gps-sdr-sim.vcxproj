@@ -44,6 +44,7 @@
     <LinkIncremental>true</LinkIncremental>
     <IncludePath>C:\Program Files %28x86%29\UHD\include;C:\boost_1_62_0;$(IncludePath)</IncludePath>
     <LibraryPath>C:\Program Files %28x86%29\UHD\lib;C:\boost_1_62_0\stage\lib;$(LibraryPath)</LibraryPath>
+    <TargetName>$(ProjectName)</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>

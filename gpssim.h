@@ -32,7 +32,7 @@ using namespace std;
 #define MAX_CHAN (16)
 
 /*! \brief Maximum number of user motion points */
-#define USER_MOTION_SIZE (100) // max duration at 10Hz
+#define USER_MOTION_SIZE (3000) // max duration at 10Hz
 
 /*! \brief Number of subframes */
 #define N_SBF (5) // 5 subframes per frame
@@ -91,7 +91,9 @@ using namespace std;
 
 #define EPHEM_ARRAY_SIZE (13) // for daily GPS broadcast ephemers file (brdc)
 
-extern 	double llh[3];
+extern double llh[3];
+extern queue<vector<double>> llh_queue;
+extern std::mutex llh_mtx;
 
 
 /*! \brief Structure representing GPS time */
@@ -196,7 +198,5 @@ typedef vector<complex<short>> frame;
 extern queue<frame> frame_queue;
 
 int v_main(int argc, char *argv[]);
-void benchmark_consumer(const int cnt);
-void keyboard_input();
 
 #endif

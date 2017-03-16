@@ -1744,6 +1744,12 @@ int v_main(int argc, char *argv[])
 		exit(1);
 	}
 
+	// Static geodetic coordinates input mode
+	// Added by scateu@gmail.com
+	staticLocationMode = TRUE;
+	llh[0] = llh[0] / R2D; // convert to RAD
+	llh[1] = llh[1] / R2D; // convert to RAD
+
 	while ((result=getopt(argc,argv,"e:u:g:l:o:s:b:T:t:d:iv"))!=-1)
 	{
 		switch (result)
@@ -1758,14 +1764,6 @@ int v_main(int argc, char *argv[])
 		case 'g':
 			strcpy(umfile, optarg);
 			nmeaGGA = TRUE;
-			break;
-		case 'l':
-			// Static geodetic coordinates input mode
-			// Added by scateu@gmail.com
-			staticLocationMode = TRUE;
-			sscanf(optarg,"%lf,%lf,%lf",&llh[0],&llh[1],&llh[2]);
-			llh[0] = llh[0] / R2D; // convert to RAD
-			llh[1] = llh[1] / R2D; // convert to RAD
 			break;
 		case 'o':
 			strcpy(outfile, optarg);
@@ -1819,7 +1817,7 @@ int v_main(int argc, char *argv[])
 			break;
 		case 'd':
 			duration = atof(optarg);
-			if (duration<0.0 || duration>((double)USER_MOTION_SIZE)/10.0)
+			if (duration<0.0 || duration>((double)USER_MOTION_SIZE)/10.0&& !staticLocationMode)
 			{
 				printf("ERROR: Invalid duration.\n");
 				exit(1);
@@ -1897,14 +1895,8 @@ int v_main(int argc, char *argv[])
 		printf("Using static location mode.\n");
 		llh2xyz(llh,xyz[0]); // Convert llh to xyz
 
-		numd = 100;
+		numd = iduration;
 		
-		for (iumd=1; iumd<numd; iumd++)
-		{
-			xyz[iumd][0] = xyz[0][0];
-			xyz[iumd][1] = xyz[0][1];
-			xyz[iumd][2] = xyz[0][2];
-		}
 	}
 /*
 	printf("xyz = %11.1f, %11.1f, %11.1f\n", xyz[0][0], xyz[0][1], xyz[0][2]);
@@ -2124,11 +2116,10 @@ int v_main(int argc, char *argv[])
 	// Update receiver time
 	grx = incGpsTime(grx, 0.1);
 
-	//for (iumd=1; iumd<numd; iumd++)
-	iumd = 1;
-	while (TRUE)
+	for (iumd=1; iumd<numd; iumd++)
 	{
-		if (llh_queue.size()>1)
+		boost::this_thread::interruption_point();
+		if (llh_queue.size()>0)
 		{
 			llh_mtx.lock();
 			llh[0] = llh_queue.front()[0];
@@ -2332,9 +2323,9 @@ int v_main(int argc, char *argv[])
 		grx = incGpsTime(grx, 0.1);
 
 		// Update time counter
-		//if (subGpsTime(grx, g0) - floor(subGpsTime(grx, g0)) == 0)
-		//	printf("\rTime into run = %4.1f", subGpsTime(grx, g0));
-		//fflush(stdout);
+		if (subGpsTime(grx, g0) - floor(subGpsTime(grx, g0)) == 0)
+			printf("location:%f,%f,%f\n", llh[0] * R2D, llh[1] * R2D, llh[2]);
+		fflush(stdout);
 	}
 
 	tend = clock();
@@ -2352,98 +2343,3 @@ int v_main(int argc, char *argv[])
 
 	return(0);
 }
-
-//int v_comsumer()
-//{
-//	printf("Comsumer is starting!\n");
-//	while (true)
-//	{
-//		time_queue.BlockPop();
-//		//boost::this_thread::sleep(boost::posix_time::milliseconds(10));
-//	}
-//}
-//
-//void benchmark_producer(const int cnt)
-//{
-//	gpstime_t g_test;
-//	g_test.week = 0;
-//	g_test.sec = 0;
-//	short buffer_test[500000];
-//	for (int ii = 0; ii < cnt; ii++)
-//	{
-//		time_queue.BlockPush(g_test, buffer_test);
-//	}
-//	return;
-//}
-//
-void benchmark_consumer(const int cnt)
-{
-	for (int ii = 0; ii < cnt; ii++)
-	{
-		printf("consumer : %d\n", frame_queue.size());
-		Sleep(100);
-	}
-	return;
-}
-//
-//int fifo_benchmark(const int cnt)
-//{
-//	boost::thread t(benchmark_producer, cnt);
-//	boost::thread t_consumer(benchmark_consumer, cnt);
-//	t.join();
-//	t_consumer.join();
-//	return 0;
-//}
-
-void keyboard_input()
-{
-	double step = (1.568e-7)/2; // 0.5m
-	while (1)
-	{
-		char key;
-		cin >> key;
-		
-		if (key == 'w')
-		{
-			llh[0] = llh[0] + step;
-			llh2xyz(llh, xyz[0]);
-		}
-		if (key == 's')
-		{
-			llh[0] = llh[0] - step;
-			llh2xyz(llh, xyz[0]);
-		}
-		if (key == 'a')
-		{
-			llh[1] = llh[1] - step;
-			llh2xyz(llh, xyz[0]);
-		}
-		if (key == 'd')
-		{
-			llh[1] = llh[1] + step;
-			llh2xyz(llh, xyz[0]);
-		}
-		if (key == 'g')
-		{
-			vector<double> temp_llh(3);
-			temp_llh[0] = llh[0];
-			temp_llh[1] = llh[1];
-			temp_llh[2] = llh[2];
-			while (1)
-			{
-				if (llh_queue.size() < 3)
-				{
-					llh_mtx.lock();
-					temp_llh[1] = temp_llh[1] + step;
-					llh_queue.push(temp_llh);
-					llh_mtx.unlock();
-				}
-
-			}
-
-		}
-		
-	}
-	return;
-}
-

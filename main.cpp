@@ -1,46 +1,4 @@
 #include "gpssim.h"
-//
-////
-//// Copyright 2011-2012,2014 Ettus Research LLC
-////
-//// This program is free software: you can redistribute it and/or modify
-//// it under the terms of the GNU General Public License as published by
-//// the Free Software Foundation, either version 3 of the License, or
-//// (at your option) any later version.
-////
-//// This program is distributed in the hope that it will be useful,
-//// but WITHOUT ANY WARRANTY; without even the implied warranty of
-//// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-//// GNU General Public License for more details.
-////
-//// You should have received a copy of the GNU General Public License
-//// along with this program.  If not, see <http://www.gnu.org/licenses/>.
-////
-//
-//#include <uhd/types/tune_request.hpp>
-//#include <uhd/utils/thread_priority.hpp>
-//#include <uhd/utils/safe_main.hpp>
-//#include <uhd/usrp/multi_usrp.hpp>
-//#include <boost/program_options.hpp>
-//#include <boost/format.hpp>
-//#include <boost/thread.hpp>
-//#include <iostream>
-//#include <fstream>
-//#include <complex>
-//#include <csignal>
-//
-//int main(int argc, char *argv[])
-//{
-//	char *argstr[] = { "", "-v", "-e", "brdc3540.14n", "-b", "16", "-s", "2500000", "-l", "34.77444,133.72611,100", "-d", "10" };
-//	//argv[0] = &argstr[0];
-//	boost::thread t(v_main, 12, argstr);
-//	boost::thread t_consumer(v_comsumer);
-//	t.join();
-//	//t_consumer.join();
-//	//printf("done\n");
-//	//fifo_benchmark(1000000);
-//	return 0;
-//}
 
 //
 // Copyright 2011-2012,2014 Ettus Research LLC
@@ -95,12 +53,9 @@ void send_from_queue(
 	md.start_of_burst = false;
 	md.end_of_burst = false;
 
-	//std::ifstream infile(file.c_str(), std::ifstream::binary);
-
-	//loop until the entire file has been read
 	vector<frame> frame_buffer(250000);
-	while (not stop_signal_called){
-
+	while (TRUE){
+		boost::this_thread::interruption_point();
 		if (frame_queue.size()>2){
 			tx_stream->send(&(frame_queue.front().front()), 250000, md);
 			frame_queue.pop();
@@ -117,6 +72,7 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
 	std::string args, ant, subdev, ref, wirefmt;
 	size_t spb;
 	double rate, freq, gain, bw, delay, lo_off;
+	std::string cmd;
 
 	//setup the program options
 	rate = 2500000; //default
@@ -220,18 +176,90 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
 		std::cout << "Press Ctrl + C to stop streaming..." << std::endl;
 	}
 
+	cout << "ready" << endl;
+	cout.flush();
+	cin >> cmd;
+	if (cmd.length() < 2)
+	{
+		llh[0] = 34.8097531308;
+		llh[1] = 113.5292048967;
+		llh[2] = 50;
+	}
+	else
+	{
+		sscanf(cmd.c_str(), "%lf,%lf,%lf", &llh[0], &llh[1], &llh[2]);
+	}
 
 	//file the buffer
-	char *argstr[] = { "", "-e", "brdc0720.17n", "-b", "16", "-s", "2500000", "-l", "34.8097531308,113.5292048967,50", "-d", "1", "-T", "now" };
-	boost::thread t(v_main, 13, argstr);
-	boost::thread t_input(keyboard_input);
-
+	char *argstr[] = { "", "-e", "brdc0720.17n", "-b", "16", "-s", "2500000", "-d", "3600", " -T", "now" };
+	boost::thread t_producer(v_main, 11, argstr);
 	//send from queue
-	send_from_queue(usrp, "sc16", wirefmt, spb);
+	boost::thread t_sender(send_from_queue, usrp, "sc16", wirefmt,spb);
+	
+	double step = (1.568e-7) / 2; // 0.5m
+	
+	while (1)
+	{
+		cin >> cmd;
+		if (cmd[0] == 'g') // goto location
+		{
+			vector<double> temp_llh(3);
+			vector<double> dst_llh(3);
+			double speed_llh[3]; // speed
+			double max_speed;
+			sscanf(cmd.c_str(),"g:%lf,%lf,%lf,%lf", &dst_llh[0], &dst_llh[1], &dst_llh[2], &max_speed);
+			dst_llh[0] = dst_llh[0] / R2D;
+			dst_llh[1] = dst_llh[1] / R2D;
+			double range = sqrt(pow((dst_llh[0] - llh[0])*WGS84_RADIUS,2)+ pow((dst_llh[1] - llh[1])*WGS84_RADIUS,2)+abs(dst_llh[2]-llh[2]));
+			speed_llh[0] = max_speed*(dst_llh[0] - llh[0])*WGS84_RADIUS / range;
+			speed_llh[1] = max_speed*(dst_llh[1] - llh[1])*WGS84_RADIUS / range;
+			speed_llh[2] = max_speed*abs(dst_llh[2] - llh[2]) / range;
+			cout << dst_llh[0] << dst_llh[1] << dst_llh[2] << max_speed << endl;
+			cout << cmd.c_str() << endl;
+			cout << speed_llh[0] << endl << speed_llh[1] << endl << speed_llh[2] << endl;
+			temp_llh[0] = llh[0];
+			temp_llh[1] = llh[1];
+			temp_llh[2] = llh[2];
+			int step_count = range / max_speed * 10;
+			while (step_count > 0)
+			{
+				step_count--;
+				temp_llh[0] = temp_llh[0] + speed_llh[0] / 10 / WGS84_RADIUS;
+				temp_llh[1] = temp_llh[1] + speed_llh[1] / 10 / WGS84_RADIUS;
+				temp_llh[2] = temp_llh[2] + speed_llh[2] / 10 ;
+				llh_mtx.lock();
+				llh_queue.push(temp_llh);
+				llh_mtx.unlock();
+			}
+			llh_mtx.lock();
+			llh_queue.push(dst_llh);
+			llh_mtx.unlock();
+			cout << "ready"<<endl;
+			cout.flush();
+			//while (1)
+			//{
+			//	if (llh_queue.size() < 3)
+			//	{
+			//		llh_mtx.lock();
+			//		temp_llh[1] = temp_llh[1] + step;
+			//		llh_queue.push(temp_llh);
+			//		llh_mtx.unlock();
+			//	}
 
+			//}
+
+		}
+		else if (cmd[0] == 'e') // exit
+		{
+			t_sender.interrupt();
+			t_producer.interrupt();
+			break;
+		}
+
+	}
 
 	//finished
-	std::cout << std::endl << "Done!" << std::endl << std::endl;
+	std::cout << std::endl << "exit" << std::endl << std::endl;
 
 	return EXIT_SUCCESS;
 }
