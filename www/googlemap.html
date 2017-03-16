@@ -3,14 +3,19 @@
   <head>
     <style type="text/css">
       html, body { height: 100%; margin: 0; padding: 0; }
-      #map { height: 100%; }
+      #map { height: 100%; position: relative}
+      #lat, #lng, #spd{
+      background-color:#777;
+      border-width:0px;
+      -webkit-text-fill-color: #FFF;
+}
     </style>
     <script src="http://cdn.bootcss.com/jquery/3.1.1/jquery.min.js"></script>
     <!-- Latest compiled and minified CSS -->
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
 
     <!-- Optional theme -->
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous">
+    <!--<link rel="stylesheet" href="http://bootswatch.com/cyborg/bootstrap.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous">-->
 
     <!-- Latest compiled and minified JavaScript -->
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
@@ -45,7 +50,7 @@
         </div><!--/.navbar-collapse -->
       </div>
     </nav>
-    <div id="map" style="padding-top: 50px；top;top:50px;"></div>
+    <div id="map" ></div>
     <script type="text/javascript">
     var styleArray = [
       {
@@ -243,7 +248,12 @@
       map = new google.maps.Map(document.getElementById('map'), {
         center: {lat: 34.807811, lng: 113.529183},
         zoom: 11,
-        styles: styleArray
+        styles: styleArray,
+        mapTypeControl: true,
+        mapTypeControlOptions: {
+        style: google.maps.MapTypeControlStyle.HORIZONTAL_BAR,
+        position: google.maps.ControlPosition.BOTTOM_LEFT
+    }
       });
       loc_marker = new google.maps.Marker({
         map: map,
@@ -314,7 +324,7 @@
     }
     </script>
     <script async defer
-      src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCN_aOAJpHPbcwQvcurX5l43rv3us1PKoE&callback=initMap">
+      src="https://maps.google.cn/maps/api/js?key=AIzaSyCN_aOAJpHPbcwQvcurX5l43rv3us1PKoE&callback=initMap">
     </script>
   </body>
 </html>
