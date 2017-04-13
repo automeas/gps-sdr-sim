@@ -1,5 +1,3 @@
-#include "gpssim.h"
-
 //
 // Copyright 2011-2012,2014 Ettus Research LLC
 //
@@ -17,6 +15,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
+#include "gpssim.h"
 #include <uhd/types/tune_request.hpp>
 #include <uhd/utils/thread_priority.hpp>
 #include <uhd/utils/safe_main.hpp>
@@ -186,8 +185,8 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
 	cin >> cmd;
 	if (cmd.length() < 2)
 	{
-		llh[0] = 34.8097531308;
-		llh[1] = 113.5292048967;
+		llh[0] = 30.286502;
+		llh[1] = 120.032669;
 		llh[2] = 50;
 	}
 	else
@@ -198,17 +197,15 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
 	cout.flush();
 
 	//file the buffer
-	char *argstr[] = { "", "-e", "brdc0720.17n", "-b", "16", "-s", "2500000", "-d", "3600", " -T", "now" };
+	char *argstr[] = { "", "-e", "brdc0720.17n", "-b", "16", "-s", "2500000", "-d", "7200", " -T", "now" };
 	boost::thread t_producer(v_main, 11, argstr);
 	//send from queue
 	boost::thread t_sender(send_from_queue, usrp, "sc16", wirefmt,spb);
 	
-	double step = (1.568e-7) / 2; // 0.5m
-	
-	while (1)
+	while (TRUE)
 	{
 		cin >> cmd;
-		if (cmd[0] == 'g') // goto location
+		if (cmd[0] == 'g') // go to location
 		{
 			sscanf(cmd.c_str(),"g:%lf,%lf,%lf,%lf", &dst_llh[0], &dst_llh[1], &dst_llh[2], &max_speed);
 			dst_llh[0] = dst_llh[0] / R2D;
@@ -239,18 +236,6 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
 			llh_mtx.unlock();
 			cout << "ready"<<endl;
 			cout.flush();
-			//while (1)
-			//{
-			//	if (llh_queue.size() < 3)
-			//	{
-			//		llh_mtx.lock();
-			//		temp_llh[1] = temp_llh[1] + step;
-			//		llh_queue.push(temp_llh);
-			//		llh_mtx.unlock();
-			//	}
-
-			//}
-
 		}
 		else if (cmd[0] == 'e') // exit
 		{

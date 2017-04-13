@@ -1,330 +1,299 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <style type="text/css">
-      html, body { height: 100%; margin: 0; padding: 0; }
-      #map { height: 100%; position: relative}
-      #lat, #lng, #spd{
-      background-color:#777;
-      border-width:0px;
+
+<head>
+  <style type="text/css">
+    html,
+    body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+    }
+
+    #map {
+      height: 100%;
+      position: relative
+    }
+
+    #lat,
+    #lng,
+    #spd {
+      background-color: #777;
+      border-width: 0px;
       -webkit-text-fill-color: #FFF;
-}
-    </style>
-    <script src="http://cdn.bootcss.com/jquery/3.1.1/jquery.min.js"></script>
-    <!-- Latest compiled and minified CSS -->
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+    }
+  </style>
+  <script src="http://cdn.bootcss.com/jquery/3.1.1/jquery.min.js"></script>
+  <!-- Latest compiled and minified CSS -->
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u"
+    crossorigin="anonymous">
+  <!-- Latest compiled and minified JavaScript -->
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa"
+    crossorigin="anonymous"></script>
+</head>
 
-    <!-- Optional theme -->
-    <!--<link rel="stylesheet" href="http://bootswatch.com/cyborg/bootstrap.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous">-->
-
-    <!-- Latest compiled and minified JavaScript -->
-    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
-  </head>
-  <body>
-      <nav class="navbar navbar-inverse navbar-fixed-top">
-      <div class="container">
-        <div class="navbar-header">
-          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+<body>
+  <nav class="navbar navbar-inverse navbar-fixed-top">
+    <div class="container">
+      <div class="navbar-header">
+        <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false"
+          aria-controls="navbar">
             <span class="sr-only">Toggle navigation</span>
             <span class="icon-bar"></span>
             <span class="icon-bar"></span>
             <span class="icon-bar"></span>
           </button>
-          <a class="navbar-brand" href="#">Realtime GPS-SDR-SIM</a>
-        </div>
-        <div id="navbar" class="navbar-collapse collapse">
-          <div class="navbar-form navbar-right">
-            <button id="button1" class="btn btn-danger" onclick="button1_click();">连接</button>
-            <div class="form-group">
-              <input id="lat" type="text" placeholder="纬度" class="form-control">
-            </div>
-            <div class="form-group">
-              <input id="lng" type="text" placeholder="经度" class="form-control">
-            </div>
-            <div class="form-group">
-              <input type="text" id="spd" placeholder="速度" value="20" class="form-control">
-            </div>
-            <button id="button2" class="btn btn-success" onclick="send_location()">GO!</button>
-
-          </div>
-        </div><!--/.navbar-collapse -->
+        <a class="navbar-brand" href="#">Realtime GPS spoofing</a>
       </div>
-    </nav>
-    <div id="map" ></div>
+      <div id="navbar" class="navbar-collapse collapse">
+        <div class="navbar-form navbar-right">
+          <button id="button1" class="btn btn-danger" onclick="button1_click();">connect</button>
+          <button id="button2" class="btn btn-success" onclick="send_location()">go to</button>
+          <div class="form-group">
+            <input id="lat" type="text" placeholder="lat" class="form-control">
+          </div>
+          <div class="form-group">
+            <input id="lng" type="text" placeholder="lng" class="form-control">
+          </div>
+          <div class="form-group">
+            <input type="text" id="spd" placeholder="spd" value="20" class="form-control">
+          </div>
+
+
+        </div>
+      </div>
+      <!--/.navbar-collapse -->
+    </div>
+  </nav>
+    <div id="map"></div>
     <script type="text/javascript">
-    var styleArray = [
-      {
-        "elementType": "geometry",
-        "stylers": [
-          {
+      var styleArray = [{
+          "elementType": "geometry",
+          "stylers": [{
             "color": "#212121"
-          }
-        ]
-      },
-      {
-        "elementType": "labels.icon",
-        "stylers": [
-          {
+          }]
+        },
+        {
+          "elementType": "labels.icon",
+          "stylers": [{
             "visibility": "off"
-          }
-        ]
-      },
-      {
-        "elementType": "labels.text.fill",
-        "stylers": [
-          {
+          }]
+        },
+        {
+          "elementType": "labels.text.fill",
+          "stylers": [{
             "color": "#757575"
-          }
-        ]
-      },
-      {
-        "elementType": "labels.text.stroke",
-        "stylers": [
-          {
+          }]
+        },
+        {
+          "elementType": "labels.text.stroke",
+          "stylers": [{
             "color": "#212121"
-          }
-        ]
-      },
-      {
-        "featureType": "administrative",
-        "elementType": "geometry",
-        "stylers": [
-          {
+          }]
+        },
+        {
+          "featureType": "administrative",
+          "elementType": "geometry",
+          "stylers": [{
             "color": "#757575"
-          }
-        ]
-      },
-      {
-        "featureType": "administrative.country",
-        "elementType": "labels.text.fill",
-        "stylers": [
-          {
+          }]
+        },
+        {
+          "featureType": "administrative.country",
+          "elementType": "labels.text.fill",
+          "stylers": [{
             "color": "#9e9e9e"
-          }
-        ]
-      },
-      {
-        "featureType": "administrative.locality",
-        "elementType": "labels.text.fill",
-        "stylers": [
-          {
+          }]
+        },
+        {
+          "featureType": "administrative.locality",
+          "elementType": "labels.text.fill",
+          "stylers": [{
             "color": "#bdbdbd"
-          }
-        ]
-      },
-      {
-        "featureType": "poi",
-        "elementType": "labels.text.fill",
-        "stylers": [
-          {
+          }]
+        },
+        {
+          "featureType": "poi",
+          "elementType": "labels.text.fill",
+          "stylers": [{
             "color": "#757575"
-          }
-        ]
-      },
-      {
-        "featureType": "poi.park",
-        "elementType": "geometry",
-        "stylers": [
-          {
+          }]
+        },
+        {
+          "featureType": "poi.park",
+          "elementType": "geometry",
+          "stylers": [{
             "color": "#181818"
-          }
-        ]
-      },
-      {
-        "featureType": "poi.park",
-        "elementType": "labels.text.fill",
-        "stylers": [
-          {
+          }]
+        },
+        {
+          "featureType": "poi.park",
+          "elementType": "labels.text.fill",
+          "stylers": [{
             "color": "#616161"
-          }
-        ]
-      },
-      {
-        "featureType": "poi.park",
-        "elementType": "labels.text.stroke",
-        "stylers": [
-          {
+          }]
+        },
+        {
+          "featureType": "poi.park",
+          "elementType": "labels.text.stroke",
+          "stylers": [{
             "color": "#1b1b1b"
-          }
-        ]
-      },
-      {
-        "featureType": "road",
-        "elementType": "geometry.fill",
-        "stylers": [
-          {
+          }]
+        },
+        {
+          "featureType": "road",
+          "elementType": "geometry.fill",
+          "stylers": [{
             "color": "#2c2c2c"
-          }
-        ]
-      },
-      {
-        "featureType": "road",
-        "elementType": "labels.text.fill",
-        "stylers": [
-          {
+          }]
+        },
+        {
+          "featureType": "road",
+          "elementType": "labels.text.fill",
+          "stylers": [{
             "color": "#8a8a8a"
-          }
-        ]
-      },
-      {
-        "featureType": "road.arterial",
-        "elementType": "geometry",
-        "stylers": [
-          {
+          }]
+        },
+        {
+          "featureType": "road.arterial",
+          "elementType": "geometry",
+          "stylers": [{
             "color": "#373737"
-          }
-        ]
-      },
-      {
-        "featureType": "road.highway",
-        "elementType": "geometry",
-        "stylers": [
-          {
+          }]
+        },
+        {
+          "featureType": "road.highway",
+          "elementType": "geometry",
+          "stylers": [{
             "color": "#3c3c3c"
-          }
-        ]
-      },
-      {
-        "featureType": "road.highway.controlled_access",
-        "elementType": "geometry",
-        "stylers": [
-          {
+          }]
+        },
+        {
+          "featureType": "road.highway.controlled_access",
+          "elementType": "geometry",
+          "stylers": [{
             "color": "#4e4e4e"
-          }
-        ]
-      },
-      {
-        "featureType": "road.local",
-        "elementType": "labels.text.fill",
-        "stylers": [
-          {
+          }]
+        },
+        {
+          "featureType": "road.local",
+          "elementType": "labels.text.fill",
+          "stylers": [{
             "color": "#616161"
-          }
-        ]
-      },
-      {
-        "featureType": "transit",
-        "elementType": "labels.text.fill",
-        "stylers": [
-          {
+          }]
+        },
+        {
+          "featureType": "transit",
+          "elementType": "labels.text.fill",
+          "stylers": [{
             "color": "#757575"
-          }
-        ]
-      },
-      {
-        "featureType": "water",
-        "elementType": "geometry",
-        "stylers": [
-          {
+          }]
+        },
+        {
+          "featureType": "water",
+          "elementType": "geometry",
+          "stylers": [{
             "color": "#000000"
-          }
-        ]
-      },
-      {
-        "featureType": "water",
-        "elementType": "labels.text.fill",
-        "stylers": [
-          {
+          }]
+        },
+        {
+          "featureType": "water",
+          "elementType": "labels.text.fill",
+          "stylers": [{
             "color": "#3d3d3d"
-          }
-        ]
-      }
-    ];
-    var map;
-    var isready = false;
-    var ws;
-    var ws_connected = false;
-    var loc_marker;
-    function placeMarkerAndPanTo(latLng, map) {
-      var marker = new google.maps.Marker({
-        position: latLng,
-        map: map
-      });
-      $("#lat").val(latLng.lat());
-      $("#lng").val(latLng.lng());
-      // ws.send("g:"+latLng.lat()+","+latLng.lng()+",10,1");
-    }
-    function initMap() {
-      map = new google.maps.Map(document.getElementById('map'), {
-        center: {lat: 34.807811, lng: 113.529183},
-        zoom: 11,
-        styles: styleArray,
-        mapTypeControl: true,
-        mapTypeControlOptions: {
-        style: google.maps.MapTypeControlStyle.HORIZONTAL_BAR,
-        position: google.maps.ControlPosition.BOTTOM_LEFT
-    }
-      });
-      loc_marker = new google.maps.Marker({
-        map: map,
-        icon: "http://www.google.com/intl/en_us/mapfiles/ms/micons/arrow.png",
-      });
-      map.addListener('dblclick', function(e) {
-        placeMarkerAndPanTo(e.latLng, map)});
-    }
-
-    function mark_location(latlng)
-    {
-      loc_marker.setPosition(latlng);
-      loc_marker.setMap(map);
-    }
-    function ws_connect() {
-
-      console.log("ws connect!");
-      ws = new WebSocket("ws://localhost/");
-      ws_connected = true;
-      ws.onmessage = function(e) {
-        console.log(e.data);
-        if (e.data == "ready")
-        {
-          isready = true;
-        };
-        if (e.data[0] == "l")
-        {
-          strll = e.data.split(":")[1];
-          lat_now = parseFloat(strll.split(",")[0]);
-          lng_now = parseFloat(strll.split(",")[1]);
-          mark_location( {lat:lat_now, lng: lng_now});
+          }]
         }
-        if (e.data == "exit")
-        {
-          alert("UHD进程退出！");
-          ws_connected = false;
+      ];
+      var map;
+      var isready = false;
+      var ws;
+      var ws_connected = false;
+      var loc_marker;
+
+      function placeMarkerAndPanTo(latLng, map) {
+        var marker = new google.maps.Marker({
+          position: latLng,
+          map: map
+        });
+        $("#lat").val(latLng.lat());
+        $("#lng").val(latLng.lng());
+        // ws.send("g:"+latLng.lat()+","+latLng.lng()+",10,1");
+      }
+
+      function initMap() {
+        map = new google.maps.Map(document.getElementById('map'), {
+          center: {
+            lat: 21.355217755470854,
+            lng: -157.95239210128784
+          },
+          zoom: 11,
+          styles: styleArray,
+          mapTypeControl: true,
+          mapTypeControlOptions: {
+            style: google.maps.MapTypeControlStyle.HORIZONTAL_BAR,
+            position: google.maps.ControlPosition.BOTTOM_LEFT
+          }
+        });
+        loc_marker = new google.maps.Marker({
+          map: map,
+          icon: "http://www.google.com/intl/en_us/mapfiles/ms/micons/arrow.png",
+        });
+        map.addListener('dblclick', function (e) {
+          placeMarkerAndPanTo(e.latLng, map)
+        });
+      }
+
+      function mark_location(latlng) {
+        loc_marker.setPosition(latlng);
+        loc_marker.setMap(map);
+      }
+
+      function ws_connect() {
+
+        console.log("ws connect!");
+        ws = new WebSocket("ws://localhost/");
+        ws_connected = true;
+        ws.onmessage = function (e) {
+          console.log(e.data);
+          if (e.data == "ready") {
+            isready = true;
+          };
+          if (e.data[0] == "l") {
+            strll = e.data.split(":")[1];
+            lat_now = parseFloat(strll.split(",")[0]);
+            lng_now = parseFloat(strll.split(",")[1]);
+            mark_location({
+              lat: lat_now,
+              lng: lng_now
+            });
+          }
+          if (e.data == "exit") {
+            alert("UHD进程退出！");
+            ws_connected = false;
+            $("#button1").removeClass("btn-success").addClass("btn-danger");
+          }
+        }
+      }
+
+      function button1_click() {
+        if (!ws_connected) {
+          $("#button1").removeClass("btn-danger").addClass("btn-success");
+          ws_connect();
+        } else {
+          ws.send("e");
+          ws.close();
           $("#button1").removeClass("btn-success").addClass("btn-danger");
         }
       }
-    }
-    function button1_click()
-    {
-      if(!ws_connected)
-      {
-        $("#button1").removeClass("btn-danger").addClass("btn-success");
-        ws_connect();
-      }
-      else
-      {
-        ws.send("e");
-        ws.close();
-        $("#button1").removeClass("btn-success").addClass("btn-danger");
-      }
-    }
-    function send_location()
-    {
-        ws.send("g:"+$("#lat").val()+","+$("#lng").val()+",10,"+$("#spd").val());
-        console.log("g:"+$("#lat").val()+","+$("#lng").val()+",10,"+$("#spd").val());
-        isready = false;
-      // if(isready)
-      // {
 
-      // }
-      // else
-      // {
-      //   alert("UHD not ready!");
-      // }
-    }
+      function send_location() {
+        ws.send("g:" + $("#lat").val() + "," + $("#lng").val() + ",10," + $("#spd").val());
+        console.log("g:" + $("#lat").val() + "," + $("#lng").val() + ",10," + $("#spd").val());
+        isready = false;
+      }
     </script>
-    <script async defer
-      src="https://maps.google.cn/maps/api/js?key=AIzaSyCN_aOAJpHPbcwQvcurX5l43rv3us1PKoE&callback=initMap">
+    <script async defer src="https://maps.google.com/maps/api/js?key=AIzaSyCN_aOAJpHPbcwQvcurX5l43rv3us1PKoE&callback=initMap">
     </script>
-  </body>
+</body>
+
 </html>
