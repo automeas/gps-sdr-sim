@@ -9,17 +9,37 @@
     <script src="https://cache.amap.com/lbs/static/es5.min.js"></script>
     <script src="https://webapi.amap.com/maps?v=1.4.6&key=5aa7fabbe345cfb84166a65d9d965ae7"></script>
     <script type="text/javascript" src="https://cache.amap.com/lbs/static/addToolbar.js"></script>
+    <!-- UI组件库 1.0 -->
+    <script src="https:/webapi.amap.com/ui/1.0/main.js?v=1.0.11"></script>
 </head>
 <body>
 <div id="container"></div>
 
 <script>
-    var map = new AMap.Map('container', {
+    // amap init
+    AMapUI.loadUI(['control/BasicControl'], amap_init);
+    function amap_init(BasicControl) {
+        var layerCtrl = new BasicControl.LayerSwitcher({
+        position: 'tr'
+        });
+        var map = new AMap.Map('container', {
+        layers: layerCtrl.getEnabledLayers(),
         resizeEnable: true,
-        zoom:11,
-        center: [116.397428, 39.90923]
-    });
-    map.setMapStyle('amap://styles/dark');
+        zoom:14,
+        center: [116.39750327708998, 39.90776889955617]
+        });
+        map.setMapStyle('amap://styles/dark');
+        map.addControl(layerCtrl);
+
+        // amap 添加标记
+        var marker = new AMap.Marker({
+        icon: "http://webapi.amap.com/theme/v1.3/markers/n/mark_b.png",
+        position: [116.39750327708998, 39.90776889955617]
+        });
+        map.add(marker);        
+    }
+
+
 </script>
 </body>
 </html>
