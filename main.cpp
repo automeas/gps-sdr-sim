@@ -94,7 +94,7 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
 		("ant", po::value<std::string>(&ant), "antenna selection")
 		("subdev", po::value<std::string>(&subdev), "subdevice specification")
 		("bw", po::value<double>(&bw), "analog frontend filter bandwidth in Hz")
-		("ref", po::value<std::string>(&ref)->default_value("internal"), "reference source (internal, external, mimo)")
+		("ref", po::value<std::string>(&ref)->default_value("gpsdo"), "reference source (internal, external, mimo£¬ gpsdo)")
 		("wirefmt", po::value<std::string>(&wirefmt)->default_value("sc16"), "wire format (sc8 or sc16)")
 		("delay", po::value<double>(&delay)->default_value(0.0), "specify a delay between repeated transmission of file")
 		("repeat", "repeatedly transmit file")
@@ -118,7 +118,16 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
 	uhd::usrp::multi_usrp::sptr usrp = uhd::usrp::multi_usrp::make(args);
 
 	//Lock mboard clocks
-	usrp->set_clock_source(ref);
+	try
+	{
+		usrp->set_clock_source(ref);
+	}
+	catch (const std::exception&)
+	{
+		ref = string("internal");
+		usrp->set_clock_source(ref);
+	}
+	cout << "Usng clock source: " << ref << endl;
 
 	//always select the subdevice first, the channel mapping affects the other settings
 	if (vm.count("subdev")) usrp->set_tx_subdev_spec(subdev);
@@ -172,6 +181,12 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
 		uhd::sensor_value_t ref_locked = usrp->get_mboard_sensor("ref_locked", 0);
 		std::cout << boost::format("Checking TX: %s ...") % ref_locked.to_pp_string() << std::endl;
 		UHD_ASSERT_THROW(ref_locked.to_bool());
+	}
+	if ((ref == "gpsdo") and (std::find(sensor_names.begin(), sensor_names.end(), "gps_locked") != sensor_names.end())) {
+		// use ocxo 
+		//uhd::sensor_value_t ref_locked = usrp->get_mboard_sensor("gps_locked", 0);
+		//std::cout << boost::format("Checking TX: %s ...") % ref_locked.to_pp_string() << std::endl;
+		//UHD_ASSERT_THROW(ref_locked.to_bool());
 	}
 
 	//set sigint if user wants to receive
