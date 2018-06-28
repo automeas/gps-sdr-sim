@@ -197,7 +197,7 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
 	cout.flush();
 
 	//file the buffer
-	char *argstr[] = { "", "-e", "brdc0720.17n", "-b", "16", "-s", "2500000", "-d", "7200", " -T", "now" };
+	char *argstr[] = { "", "-e", "brdc", "-b", "16", "-s", "2500000", "-d", "7200", "-T", "now" };
 	boost::thread t_producer(v_main, 11, argstr);
 	//send from queue
 	boost::thread t_sender(send_from_queue, usrp, "sc16", wirefmt,spb);
