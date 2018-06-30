@@ -59,7 +59,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
       <HeapReserveSize>0x10000000</HeapReserveSize>
-      <AdditionalDependencies>libboost_thread-vc120-mt-1_62.lib;%(AdditionalDependencies);uhd.lib</AdditionalDependencies>
+      <AdditionalDependencies>libboost_thread-vc140-mt-1_62.lib;%(AdditionalDependencies);uhd.lib</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
