@@ -256,6 +256,7 @@
         ws.onmessage = function (e) {
           console.log(e.data);
           if (e.data == "ready") {
+            $("#button1").removeClass("btn-danger").addClass("btn-success");
             isready = true;
           };
           if (e.data[0] == "l") {
